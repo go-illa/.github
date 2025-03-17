@@ -1,0 +1,157 @@
+name: 'Ruby on Rails CI'
+on:
+  push:
+    branches:
+      - main
+      - master
+      - staging
+  pull_request:
+    branches:
+      - main
+      - master
+      - staging
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2.0
+          bundler-cache: true
+
+      - name: Setup Node.js 18.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.x
+
+      - name: Install Yarn packages
+        uses: borales/actions-yarn@v4
+        with:
+          cmd: install # will run `yarn install` command
+
+      - name: Install Dependencies
+        run: |
+          sudo apt install -yqq libpq-dev
+          gem install bundler
+
+      - name: Install Gems
+        run: bundle install
+
+      - name: Assets precompile
+        run: bundle exec rake assets:precompile --trace
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    continue-on-error: false
+    strategy:
+      fail-fast: true
+
+    services:
+      postgres:
+        image: mdillon/postgis:9.6
+        ports:
+          - '5432:5432'
+        env:
+          POSTGRES_DB: db-test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: db-pass
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:6.0.9
+        ports:
+          - '6379:6379'
+        options: --entrypoint redis-server
+    env:
+      PG_HOST: localhost
+      PG_DB: db-test
+      PG_USER: test
+      PG_PASSWORD: db-pass
+      PG_PORT: 5432
+      WITH_COVERAGE: true
+      RAILS_ENV: test
+      REDIS_URL: redis://localhost:6379/0
+      RAILS_MASTER_KEY: ${{ secrets.RAILS_MASTER_KEY }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2.0
+          bundler-cache: true
+
+      - name: Setup database
+        run: |
+          bundle exec rails db:create
+          bundle exec rails db:migrate
+          bundle exec rails db:test:prepare
+
+      - name: Code Quality
+        run: |
+          bundle exec rubocop app lib config
+
+      - name: Security checks
+        run: |
+          bundle exec brakeman --no-pager -o ./test/html_reports/brakeman.html
+
+      - name: Mini Test
+        run: |
+          bundle exec rails test --exclude /Benchmark/ --exclude /bench/ --skip 0
+
+      - name: Coverage Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+      - name: Mini Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mini-report
+          path: test/html_reports/
+
+  # deploy:
+  #   name: Docker with Ngrok
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 6
+  #   needs: [build, test]
+
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+
+  #     - name: Run container
+  #       run: docker-compose up -d
+
+  #     - name: Run on Ngrok
+  #       uses: luisboto/ngrok-tunnel-action@v0.1.7.2
+  #       with:
+  #         timeout: 1h
+  #         port: 3000
+  #         ngrok_authtoken: ${{ secrets.NGROK_AUTHTOKEN }}
+  #         tunnel_type: http
+  #         save_url_to_filename: tunnelURL.md
+
+  #     - name: Sleep for 120 seconds
+  #       uses: jakejarvis/wait-action@master
+  #       with:
+  #         time: '120s'
+
+  #     - name: Comment PR
+  #       uses: allthatjazzleo/actions-pull-request-add-comment@master
+  #       with:
+  #         message: 'yoyo 🤙🏻'
+  #         # message: "echo ${{ github.event.comment.body }}" dynamic message based on comment
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

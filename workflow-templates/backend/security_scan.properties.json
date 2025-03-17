@@ -1,0 +1,5 @@
+{
+    "name": "Security Scan Workflow",
+    "description": "Security Scan CI workflow template.",
+    "iconName": "beaker-24"
+}

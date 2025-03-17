@@ -1,0 +1,5 @@
+{
+    "name": "Auto Assign Pull Request Workflow",
+    "description": "Auto Assign Pull Request CI workflow template.",
+    "iconName": "beaker-24"
+}

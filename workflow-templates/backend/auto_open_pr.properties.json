@@ -1,0 +1,5 @@
+{
+    "name": "Auto Open Pull Request Workflow",
+    "description": "Auto Open Pull Request CI workflow template.",
+    "iconName": "beaker-24"
+}

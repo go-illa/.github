@@ -1,0 +1,40 @@
+name: Auto Assign PR to Creator
+
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  auto_assign:
+    name: Auto Assign PR
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Add Empty Commit with Message
+        run: |
+          BRANCH_NAME="${{ github.head_ref }}"
+          REPO="${{ github.repository }}"
+          git config --global user.email "githubilla@illa.com.eg"
+          git config --global user.name "ILLA TECH"
+          git clone https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/$REPO.git
+          cd $(basename "$REPO")
+          git checkout "$BRANCH_NAME"
+          git commit --allow-empty -m "CodeRabbit Trigger"
+          git push origin "$BRANCH_NAME"
+
+      - name: Authenticate GitHub CLI
+        run: gh auth status
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Assign PR to the Creator & Comment if it Fails
+        run: |
+          REPO="${{ github.repository }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          CREATOR="${{ github.event.pull_request.user.login }}"
+
+          # Try to assign the PR to the creator
+          gh pr edit $PR_NUMBER --repo "$REPO" --add-assignee "$CREATOR"
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

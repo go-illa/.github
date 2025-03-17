@@ -1,0 +1,61 @@
+name: Auto Open PR if None Exists
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - master
+      - staging
+      - sandbox
+
+jobs:
+  open_pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Check out the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Check for existing PR
+      - name: Check for Existing PR
+        id: check_pr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          EXISTING_PR=$(gh pr list --head ${{ github.ref_name }} --state open --json number --jq '.[0].number')
+          if [ -z "$EXISTING_PR" ]; then
+            echo "pr_exists=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "pr_exists=true" >> "$GITHUB_OUTPUT"
+            echo "pr_number=$EXISTING_PR" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Get committer username
+      - name: Get Committer Username
+        id: committer
+        run: |
+          echo "username=${{ github.actor }}" >> "$GITHUB_OUTPUT"
+
+      # Create PR if none exists
+      - name: Create PR if None Exists
+        if: steps.check_pr.outputs.pr_exists == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          gh pr create \
+            --title "Auto PR: ${{ github.ref_name }}" \
+            --body "Automated PR created from branch `${{ github.ref_name }}`" \
+            --base staging \
+            --assignee "${{ steps.committer.outputs.username }}" \
+            --label auto
+
+      # Assign assignee and label to existing PR
+      - name: Update Existing PR
+        if: steps.check_pr.outputs.pr_exists == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          gh pr edit ${{ steps.check_pr.outputs.pr_number }} \
+            --add-assignee "${{ steps.committer.outputs.username }}" \
+            --add-label auto

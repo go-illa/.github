@@ -1,0 +1,152 @@
+name: Project Statuses on PR Events
+
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review, converted_to_draft, closed]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  pr_events:
+    name: PR Events
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Get PR ID and Status
+        id: get_pr_info
+        run: |
+          PR_DATA=$(gh api graphql -f query='
+          {
+            repository(owner: "${{ github.repository_owner }}", name: "${{ github.event.repository.name }}") {
+              pullRequest(number: ${{ github.event.pull_request.number }}) {
+                id
+                isDraft
+                merged
+                reviews(last: 10) {
+                  nodes {
+                    state
+                  }
+                }
+              }
+            }
+          }')
+
+          PR_ID=$(echo "$PR_DATA" | jq -r '.data.repository.pullRequest.id')
+          IS_DRAFT=$(echo "$PR_DATA" | jq -r '.data.repository.pullRequest.isDraft')
+          IS_MERGED=$(echo "$PR_DATA" | jq -r '.data.repository.pullRequest.merged')
+          LATEST_REVIEW=$(echo "$PR_DATA" | jq -r '.data.repository.pullRequest.reviews.nodes[-1].state')
+
+          echo "PR_ID=$PR_ID" >> $GITHUB_ENV
+          echo "IS_DRAFT=$IS_DRAFT" >> $GITHUB_ENV
+          echo "IS_MERGED=$IS_MERGED" >> $GITHUB_ENV
+          echo "LATEST_REVIEW=$LATEST_REVIEW" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Determine Status Based on PR & Review State
+        id: determine_status
+        run: |
+          if [[ "$IS_MERGED" == "true" ]]; then
+            if [[ "$LATEST_REVIEW" == "APPROVED" ]]; then
+              STATUS_NAME="Merged"
+            else
+              STATUS_NAME="Dismissed Merged"
+            fi
+          elif [[ "$IS_DRAFT" == "true" ]]; then
+            STATUS_NAME="To Be Reviewed"
+          elif [[ "${{ github.event.action }}" == "opened" || "${{ github.event.action }}" == "ready_for_review" ]]; then
+            STATUS_NAME="In Review"
+          elif [[ "$LATEST_REVIEW" == "APPROVED" ]]; then
+            STATUS_NAME="Approved"
+          elif [[ "$LATEST_REVIEW" == "CHANGES_REQUESTED" ]]; then
+            STATUS_NAME="Needs Changes"
+          else
+            STATUS_NAME="In Review"
+          fi
+
+          echo "STATUS_NAME=$STATUS_NAME" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Get Project Item ID
+        id: get_item_id
+        run: |
+          ITEM_ID=$(gh api graphql -f query='
+          {
+            node(id: "PVT_kwDOA0luXs4AxdrW") {
+              ... on ProjectV2 {
+                items(first: 100) {
+                  nodes {
+                    id
+                    content {
+                      ... on PullRequest {
+                        id
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }' --jq '.data.node.items.nodes[] | select(.content.id=="'"$PR_ID"'") | .id')
+          echo "ITEM_ID=$ITEM_ID" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Get Status Field ID
+        id: get_status_field_id
+        run: |
+          FIELD_ID=$(gh api graphql -f query='
+          {
+            node(id: "PVT_kwDOA0luXs4AxdrW") {
+              ... on ProjectV2 {
+                fields(first: 100) {
+                  nodes {
+                    ... on ProjectV2SingleSelectField {
+                      id
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }' --jq '.data.node.fields.nodes[] | select(.name=="Status") | .id')
+          echo "FIELD_ID=$FIELD_ID" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Get Correct Status Option ID
+        id: get_option_id
+        run: |
+          OPTION_ID=$(gh api graphql -f query='
+          {
+            node(id: "'$FIELD_ID'") {
+              ... on ProjectV2SingleSelectField {
+                options {
+                  id
+                  name
+                }
+              }
+            }
+          }' --jq '.data.node.options[] | select(.name=="'"$STATUS_NAME"'") | .id')
+
+          echo "OPTION_ID=$OPTION_ID" >> $GITHUB_ENV
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+
+      - name: Update GitHub Project Status Based on PR Event
+        run: |
+          gh api graphql -f query='
+          mutation {
+            updateProjectV2ItemFieldValue(input: {
+              projectId: "PVT_kwDOA0luXs4AxdrW",
+              itemId: "'$ITEM_ID'",
+              fieldId: "'$FIELD_ID'",
+              value: { singleSelectOptionId: "'$OPTION_ID'" }
+            }) {
+              projectV2Item {
+                id
+              }
+            }
+          }'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
