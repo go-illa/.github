@@ -1,5 +1,5 @@
 {
-    "name": "Auto Open Pull Request Workflow",
+    "name": "Auto Open Pull Request",
     "description": "Auto Open Pull Request CI workflow template.",
     "iconName": "octicon beaker-24",
 	"categories": [

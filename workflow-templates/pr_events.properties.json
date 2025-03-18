@@ -1,5 +1,5 @@
 {
-    "name": "Pull Request Events Workflow",
+    "name": "Pull Request Events",
     "description": "Pull Request Events CI workflow template.",
     "iconName": "octicon beaker-24",
 	"categories": [
