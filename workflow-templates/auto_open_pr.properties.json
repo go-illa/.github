@@ -1,5 +1,8 @@
 {
     "name": "Auto Open Pull Request Workflow",
     "description": "Auto Open Pull Request CI workflow template.",
-    "iconName": "beaker-24"
+    "iconName": "beaker-24",
+	"categories": [
+        "Illa - BE Workflows"
+    ]
 }

@@ -1,5 +1,8 @@
 {
     "name": "Pull Request Requirements Workflow",
     "description": "Pull Request Requirements CI workflow template.",
-    "iconName": "beaker-24"
+    "iconName": "beaker-24",
+	"categories": [
+        "Illa - BE Workflows"
+    ]
 }
