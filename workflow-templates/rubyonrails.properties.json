@@ -1,7 +1,7 @@
 {
     "name": "Ruby on Rails Workflow",
     "description": "Ruby on Rails CI workflow template.",
-    "iconName": "beaker-24",
+    "iconName": "octicon beaker-24",
 	"categories": [
         "Illa - BE Workflows"
     ]

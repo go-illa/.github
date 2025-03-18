@@ -1,7 +1,7 @@
 {
     "name": "Auto Assign Pull Request Workflow",
     "description": "Auto Assign Pull Request CI workflow template.",
-    "iconName": "beaker-24",
+    "iconName": "octicon beaker-24",
 	"categories": [
         "Illa - BE Workflows"
     ]

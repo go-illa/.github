@@ -1,7 +1,7 @@
 {
     "name": "Security Scan Workflow",
     "description": "Security Scan CI workflow template.",
-    "iconName": "beaker-24",
+    "iconName": "octicon beaker-24",
 	"categories": [
         "Illa - BE Workflows"
     ]

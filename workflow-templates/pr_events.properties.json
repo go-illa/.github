@@ -1,7 +1,7 @@
 {
     "name": "Pull Request Events Workflow",
     "description": "Pull Request Events CI workflow template.",
-    "iconName": "beaker-24",
+    "iconName": "octicon beaker-24",
 	"categories": [
         "Illa - BE Workflows"
     ]

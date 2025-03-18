@@ -1,7 +1,7 @@
 {
     "name": "Pronoto Workflow",
     "description": "Pronoto CI workflow template.",
-    "iconName": "beaker-24",
+    "iconName": "octicon beaker-24",
 	"categories": [
         "Illa - BE Workflows"
     ]
