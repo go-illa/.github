@@ -6,6 +6,7 @@ on:
 
 jobs:
   pronto:
+    name: Pronto Code Quality
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
