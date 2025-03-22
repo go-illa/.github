@@ -8,7 +8,7 @@ jobs:
   auto_assign:
     name: Auto Assign PR
     runs-on: ubuntu-latest
-    timeout-minutes: 1
+    timeout-minutes: 2
     steps:
       - name: Add Empty Commit with Message
         run: |
@@ -27,14 +27,29 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
-      - name: Assign PR to the Creator & Comment if it Fails
+      - name: Assign PR to the Creator
+        id: assign_pr
         run: |
           REPO="${{ github.repository }}"
           PR_NUMBER="${{ github.event.pull_request.number }}"
           CREATOR="${{ github.event.pull_request.user.login }}"
 
-          # Try to assign the PR to the creator
-          gh pr edit $PR_NUMBER --repo "$REPO" --add-assignee "$CREATOR"
+          if gh pr edit $PR_NUMBER --repo "$REPO" --add-assignee "$CREATOR"; then
+            echo "ASSIGNMENT_SUCCESS=true" >> $GITHUB_ENV
+          else
+            echo "ASSIGNMENT_SUCCESS=false" >> $GITHUB_ENV
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
+      - name: Wait for 30 seconds Before Commenting
+        run: sleep 30
+
+      - name: Comment on PR
+        run: |
+          REPO="${{ github.repository }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+
+          gh pr comment $PR_NUMBER --repo "$REPO" --body "@coderabbitai full review"
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}

@@ -28,7 +28,7 @@ jobs:
           echo "BASE_REF=$BASE_REF" >> $GITHUB_ENV
 
       - name: Install Pronto and runners
-        run: gem install rubocop rubocop-performance rubocop-rails fasterer brakeman faraday-retry pronto pronto-rails_best_practices pronto-rubocop pronto-reek pronto-flay pronto-brakeman pronto-fasterer
+        run: gem install fasterer brakeman faraday-retry pronto pronto-rails_best_practices pronto-reek pronto-brakeman pronto-fasterer pronto-rails_schema
 
       - name: Run Pronto
         env:
