@@ -33,6 +33,21 @@ Your ideas are gold! We're open to improvements, suggestions, and creative innov
 - See something that can be better? Open an issue!
 - Want to contribute? Submit a PR!
 
+## 🧾 PR Requirements
+
+Before submitting or updating your Pull Request, make sure to complete the following checklist:
+
+1. **Assign a reviewer** to your PR.
+2. **Add the correct priority and severity labels.**
+3. Ensure all **Semaphore CI pipelines** and **GitHub workflow checks** have passed successfully.
+4. Include the **Jira ticket description** in the **PR description**.
+5. Make sure the **PR title** is valid, clear, and follows the naming convention.
+6. Review and handle all **Gemini** and **Copilot** comments:
+
+   * ✅ If the comment is valid, update your code accordingly.
+   * 💬 If you disagree, provide a clear and reasoned explanation in a reply comment.
+7. Once everything is complete, **request or re-request a review** from the assigned reviewer.
+
 Let's grow together.
 
 ## 🌟 Community Guidelines
